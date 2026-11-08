@@ -1,0 +1,248 @@
+{
+  "plan": {
+    "title": "Update-to-gameplay regression detection",
+    "hypothesis": "A background update may degrade motion responsiveness, game performance, or stability.",
+    "steps": [
+      "Generate a deterministic motion-event sequence from a fixed seed",
+      "Replay it against the baseline build with no update running",
+      "Replay it against the baseline build with a background update active",
+      "Repeat both runs against the candidate build",
+      "Evaluate version-controlled release gates per condition",
+      "Attribute regressions to the build or to update contention, and hand off for human review"
+    ]
+  },
+  "seed": 20261106,
+  "sessions": [
+    {
+      "releaseVersion": "1.8.2-sim",
+      "condition": "idle",
+      "seed": 20261106,
+      "metrics": {
+        "startupMs": 4200,
+        "medianInputLatencyMs": 75.6,
+        "droppedMotionEvents": 5,
+        "totalMotionEvents": 1000,
+        "averageFps": 59.9,
+        "crashCount": 0,
+        "motionRecognitionRate": 0.989
+      },
+      "window": {
+        "inside": {
+          "events": 0,
+          "medianLatencyMs": null,
+          "dropped": 0
+        },
+        "outside": {
+          "events": 1000,
+          "medianLatencyMs": 75.6,
+          "dropped": 5
+        }
+      }
+    },
+    {
+      "releaseVersion": "1.8.3-sim",
+      "condition": "idle",
+      "seed": 20261106,
+      "metrics": {
+        "startupMs": 4500,
+        "medianInputLatencyMs": 79.7,
+        "droppedMotionEvents": 6,
+        "totalMotionEvents": 1000,
+        "averageFps": 59.5,
+        "crashCount": 0,
+        "motionRecognitionRate": 0.988
+      },
+      "window": {
+        "inside": {
+          "events": 0,
+          "medianLatencyMs": null,
+          "dropped": 0
+        },
+        "outside": {
+          "events": 1000,
+          "medianLatencyMs": 79.7,
+          "dropped": 6
+        }
+      }
+    },
+    {
+      "releaseVersion": "1.8.2-sim",
+      "condition": "background-update",
+      "seed": 20261106,
+      "metrics": {
+        "startupMs": 4200,
+        "medianInputLatencyMs": 88.5,
+        "droppedMotionEvents": 7,
+        "totalMotionEvents": 1000,
+        "averageFps": 58.1,
+        "crashCount": 0,
+        "motionRecognitionRate": 0.984
+      },
+      "window": {
+        "inside": {
+          "events": 600,
+          "medianLatencyMs": 92.8,
+          "dropped": 5
+        },
+        "outside": {
+          "events": 400,
+          "medianLatencyMs": 75.6,
+          "dropped": 2
+        }
+      }
+    },
+    {
+      "releaseVersion": "1.8.3-sim",
+      "condition": "background-update",
+      "seed": 20261106,
+      "metrics": {
+        "startupMs": 4500,
+        "medianInputLatencyMs": 134.7,
+        "droppedMotionEvents": 55,
+        "totalMotionEvents": 1000,
+        "averageFps": 53.5,
+        "crashCount": 1,
+        "motionRecognitionRate": 0.909
+      },
+      "window": {
+        "inside": {
+          "events": 600,
+          "medianLatencyMs": 139.1,
+          "dropped": 52
+        },
+        "outside": {
+          "events": 400,
+          "medianLatencyMs": 79.6,
+          "dropped": 3
+        }
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "condition": "idle",
+      "conditionLabel": "No background update",
+      "baselineVersion": "1.8.2-sim",
+      "candidateVersion": "1.8.3-sim",
+      "overall": "PASS",
+      "gates": [
+        {
+          "metric": "medianInputLatencyMs",
+          "baseline": 75.6,
+          "candidate": 79.7,
+          "delta": 4.1,
+          "status": "PASS",
+          "reason": "Latency increase must not exceed 15 ms"
+        },
+        {
+          "metric": "droppedMotionEvents",
+          "baseline": 5,
+          "candidate": 6,
+          "delta": 1,
+          "status": "PASS",
+          "reason": "Dropped events must not increase by more than 15"
+        },
+        {
+          "metric": "averageFps",
+          "baseline": 59.9,
+          "candidate": 59.5,
+          "delta": -0.4,
+          "status": "PASS",
+          "reason": "Average FPS must remain at least 55"
+        },
+        {
+          "metric": "crashCount",
+          "baseline": 0,
+          "candidate": 0,
+          "delta": 0,
+          "status": "PASS",
+          "reason": "No new crashes are allowed"
+        },
+        {
+          "metric": "motionRecognitionRate",
+          "baseline": 0.989,
+          "candidate": 0.988,
+          "delta": -0.001,
+          "status": "PASS",
+          "reason": "Recognition rate must remain at least 97%"
+        },
+        {
+          "metric": "startupMs",
+          "baseline": 4200,
+          "candidate": 4500,
+          "delta": 300,
+          "status": "PASS",
+          "reason": "Startup increase must not exceed 1,000 ms"
+        }
+      ]
+    },
+    {
+      "condition": "background-update",
+      "conditionLabel": "Background update during gameplay (85% CPU, events 200-799)",
+      "baselineVersion": "1.8.2-sim",
+      "candidateVersion": "1.8.3-sim",
+      "overall": "BLOCK",
+      "gates": [
+        {
+          "metric": "medianInputLatencyMs",
+          "baseline": 88.5,
+          "candidate": 134.7,
+          "delta": 46.2,
+          "status": "BLOCK",
+          "reason": "Latency increase must not exceed 15 ms"
+        },
+        {
+          "metric": "droppedMotionEvents",
+          "baseline": 7,
+          "candidate": 55,
+          "delta": 48,
+          "status": "BLOCK",
+          "reason": "Dropped events must not increase by more than 15"
+        },
+        {
+          "metric": "averageFps",
+          "baseline": 58.1,
+          "candidate": 53.5,
+          "delta": -4.6,
+          "status": "BLOCK",
+          "reason": "Average FPS must remain at least 55"
+        },
+        {
+          "metric": "crashCount",
+          "baseline": 0,
+          "candidate": 1,
+          "delta": 1,
+          "status": "BLOCK",
+          "reason": "No new crashes are allowed"
+        },
+        {
+          "metric": "motionRecognitionRate",
+          "baseline": 0.984,
+          "candidate": 0.909,
+          "delta": -0.075,
+          "status": "BLOCK",
+          "reason": "Recognition rate must remain at least 97%"
+        },
+        {
+          "metric": "startupMs",
+          "baseline": 4200,
+          "candidate": 4500,
+          "delta": 300,
+          "status": "PASS",
+          "reason": "Startup increase must not exceed 1,000 ms"
+        }
+      ]
+    }
+  ],
+  "overall": "BLOCK",
+  "findings": [
+    "1.8.3-sim passes every gate with no update running but blocks while a background update is active (medianInputLatencyMs, droppedMotionEvents, averageFps, crashCount, motionRecognitionRate). The regression is in how the build handles update contention, not in its idle gameplay performance.",
+    "Within the same 1.8.3-sim session, median latency was 79.6 ms outside the update window and 139.1 ms inside it; 52 of 600 motions were dropped inside versus 3 of 400 outside.",
+    "[background-update] medianInputLatencyMs: 88.5 -> 134.7 (delta +46.2). Latency increase must not exceed 15 ms.",
+    "[background-update] droppedMotionEvents: 7 -> 55 (delta +48). Dropped events must not increase by more than 15.",
+    "[background-update] averageFps: 58.1 -> 53.5 (delta -4.6). Average FPS must remain at least 55.",
+    "[background-update] crashCount: 0 -> 1 (delta +1). No new crashes are allowed.",
+    "[background-update] motionRecognitionRate: 0.984 -> 0.909 (delta -0.075). Recognition rate must remain at least 97%."
+  ],
+  "caveat": "Synthetic simulator output. Not measured on Nex hardware and not evidence of an actual Nex release defect."
+}
