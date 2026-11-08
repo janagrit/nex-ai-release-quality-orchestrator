@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Release Confidence Lab</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f4f6fa;color:#172033}section{background:white;border:1px solid #dce2eb;border-radius:12px;padding:22px;margin:16px 0}button{padding:10px 16px;background:#244fc7;color:white;border:0;border-radius:8px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #e6eaf0}.BLOCK{font-weight:bold;color:#a11}.PASS{font-weight:bold;color:#176a2c}li{margin:6px 0}</style>
+<section><small>INDEPENDENT PORTFOLIO · SIMULATED DATA</small><h1>Release Confidence Lab</h1>
+<p>Update-to-gameplay regression detection: one deterministic motion sequence is replayed against the baseline and candidate builds, with and without a background update running.</p>
+<button id="run">Run release comparison</button><h2 id="status"></h2></section>
+<section><h2>Findings</h2><ul id="findings"></ul></section>
+<div id="comparisons"></div>
+<section><small id="caveat">All values are synthetic. No Nex systems, accounts, devices, firmware, or internal telemetry are accessed.</small></section>
+<script>
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const unit=m=>({averageFps:' FPS',medianInputLatencyMs:' ms',startupMs:' ms'}[m]||'');
+async function run(){
+ const x=await(await fetch('/api/report')).json();
+ const first=x.comparisons[0];
+ document.querySelector('#status').textContent='Overall: '+x.overall+' | '+first.baselineVersion+' → '+first.candidateVersion+' | seed '+x.seed;
+ document.querySelector('#findings').innerHTML=x.findings.map(f=>`<li>${esc(f)}</li>`).join('');
+ document.querySelector('#comparisons').innerHTML=x.comparisons.map(c=>`<section data-condition="${esc(c.condition)}"><h2>${esc(c.conditionLabel)}: <span class="${c.overall}">${c.overall}</span></h2>
+  <table><thead><tr><th>Metric</th><th>Baseline</th><th>Candidate</th><th>Delta</th><th>Status</th><th>Gate</th></tr></thead><tbody>
+  ${c.gates.map(g=>`<tr><td>${esc(g.metric)}</td><td>${g.baseline}${unit(g.metric)}</td><td>${g.candidate}${unit(g.metric)}</td><td>${g.delta>0?'+':''}${g.delta}${unit(g.metric)}</td><td class="${g.status}">${g.status}</td><td>${esc(g.reason)}</td></tr>`).join('')}
+  </tbody></table></section>`).join('');
+ document.querySelector('#caveat').textContent=x.caveat+' No Nex systems, accounts, devices, firmware, or internal telemetry are accessed.';
+}
+document.querySelector('#run').onclick=run;run();
+</script></html>
